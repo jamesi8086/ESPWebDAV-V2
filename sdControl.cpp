@@ -5,14 +5,16 @@
 volatile long SDControl::_spiBlockoutTime = 0;
 bool SDControl::_weTookBus = false;
 
+ICACHE_RAM_ATTR void SDControl::csSenseInt() {
+  if(!_weTookBus)
+    _spiBlockoutTime = millis() + SPI_BLOCKOUT_PERIOD;
+}
+
 void SDControl::setup() {
   // ----- GPIO -------
 	// Detect when other master uses SPI bus
 	pinMode(CS_SENSE, INPUT);
-	attachInterrupt(CS_SENSE, []() {
-		if(!_weTookBus)
-			_spiBlockoutTime = millis() + SPI_BLOCKOUT_PERIOD;
-	}, FALLING);
+	attachInterrupt(CS_SENSE, csSenseInt, FALLING);
 
 	// wait for other master to assert SPI bus first
 	delay(SPI_BLOCKOUT_PERIOD);

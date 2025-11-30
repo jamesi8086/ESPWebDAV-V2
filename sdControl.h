@@ -10,6 +10,7 @@ public:
   static void takeBusControl();
   static void relinquishBusControl();
   static bool canWeTakeBus();
+  static void csSenseInt();
  
 private:
   static volatile long _spiBlockoutTime;
