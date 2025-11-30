@@ -18,13 +18,14 @@ int Config::loadSD() {
   }
   sdcontrol.takeBusControl();
   
-  if(!sdfat.begin(SD_CS, SPI_FULL_SPEED)) {
+  //if(!sdfat.begin(SD_CS, SPI_FULL_SPEED)) {
+  if(!sdfat.begin(SD_CS)) {
     SERIAL_ECHOLN("Initial SD failed");
     sdcontrol.relinquishBusControl();
     return -2;
   }
 
-  File file = sdfat.open("SETUP.INI", FILE_READ);
+  File32 file = sdfat.open("SETUP.INI", FILE_READ);
   if (!file) {
     SERIAL_ECHOLN("Open INI file failed");
     sdcontrol.relinquishBusControl();
@@ -165,7 +166,8 @@ int Config::save_ip(const char *ip) {
   }
   sdcontrol.takeBusControl();
   
-  if(!sdfat.begin(SD_CS, SPI_FULL_SPEED)) {
+  // if(!sdfat.begin(SD_CS, SPI_FULL_SPEED)) {
+  if(!sdfat.begin(SD_CS)) {
     SERIAL_ECHOLN("Initial SD failed");
     sdcontrol.relinquishBusControl();
     return -2;
@@ -174,7 +176,7 @@ int Config::save_ip(const char *ip) {
   // Remove the old file
   sdfat.remove("ip.gcode");
 
-  File file = sdfat.open("ip.gcode", FILE_WRITE);
+  File32 file = sdfat.open("ip.gcode", FILE_WRITE);
   if (!file) {
     SERIAL_ECHOLN("Open ip file failed");
     sdcontrol.relinquishBusControl();
@@ -186,6 +188,8 @@ int Config::save_ip(const char *ip) {
   strncat(buf,ip,15);
   file.write(buf, 21);
   file.close();
+
+  return 0;
 }
 
 Config config;

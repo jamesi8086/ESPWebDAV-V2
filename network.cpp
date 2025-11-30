@@ -68,7 +68,8 @@ int Network::startDAVServer() {
   sdcontrol.takeBusControl();
   
   // start the SD DAV server
-  if(!dav.init(SD_CS, SPI_FULL_SPEED, SERVER_PORT))   {
+  // if(!dav.init(SD_CS, SPI_FULL_SPEED, SERVER_PORT))   {
+  if(!dav.init(SD_CS, SERVER_PORT))   {
     DBG_PRINT("ERROR: "); DBG_PRINTLN("Failed to initialize SD Card");
     // indicate error on LED
     //errorBlink();

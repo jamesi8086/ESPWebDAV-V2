@@ -14,20 +14,23 @@ const char *wdays[]  = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 
 // ------------------------
-bool ESPWebDAV::init(int chipSelectPin, SPISettings spiSettings, int serverPort) {
+//bool ESPWebDAV::init(int chipSelectPin, SPISettings spiSettings, int serverPort) {
+bool ESPWebDAV::init(int chipSelectPin, int serverPort) {
 // ------------------------
 	// start the wifi server
 	server = new WiFiServer(serverPort);
 	server->begin();
 	
 	// initialize the SD card
-	return sd.begin(chipSelectPin, spiSettings);
+	// return sd.begin(chipSelectPin, spiSettings);
+  return sd.begin(chipSelectPin);
 }
 
 // ------------------------
 bool ESPWebDAV::initSD(int chipSelectPin, SPISettings spiSettings) {
 	// initialize the SD card
-	return sd.begin(chipSelectPin, spiSettings);
+	// return sd.begin(chipSelectPin, spiSettings);
+  return sd.begin(chipSelectPin);
 }
 
 // ------------------------
@@ -35,6 +38,7 @@ bool ESPWebDAV::startServer() {
 // ------------------------
 	// start the wifi server
 	server->begin();
+  return true;
 }
 
 // ------------------------
@@ -98,7 +102,8 @@ void ESPWebDAV::handleRequest(String blank)	{
 
 	// does uri refer to a file or directory or a null?
 	FatFile tFile;
-	if(tFile.open(sd.vwd(), uri.c_str(), O_READ))	{
+	//if(tFile.open(sd.vwd(), uri.c_str(), O_READ))	{
+  if(tFile.open(sd.vol(), uri.c_str(), O_READ))	{
 		resource = tFile.isDir() ? RESOURCE_DIR : RESOURCE_FILE;
 		tFile.close();
 	}
@@ -286,17 +291,17 @@ void ESPWebDAV::sendPropResponse(boolean recursing, FatFile *curFile)	{
 			fullResPath += "/" + String(buf);
 
 	// get file modified time
-	dir_t dir;
+	DirFat_t dir;
 	curFile->dirEntry(&dir);
 
 	// convert to required format
 	tm tmStr;
-	tmStr.tm_hour = FAT_HOUR(dir.lastWriteTime);
-	tmStr.tm_min = FAT_MINUTE(dir.lastWriteTime);
-	tmStr.tm_sec = FAT_SECOND(dir.lastWriteTime);
-	tmStr.tm_year = FAT_YEAR(dir.lastWriteDate) - 1900;
-	tmStr.tm_mon = FAT_MONTH(dir.lastWriteDate) - 1;
-	tmStr.tm_mday = FAT_DAY(dir.lastWriteDate);
+	tmStr.tm_hour = FS_HOUR((uint16_t&)dir.modifyTime);
+	tmStr.tm_min = FS_MINUTE((uint16_t&)dir.modifyTime);
+	tmStr.tm_sec = FS_SECOND((uint16_t&)dir.modifyTime);
+	tmStr.tm_year = FS_YEAR((uint16_t&)dir.modifyDate) - 1900;
+	tmStr.tm_mon = FS_MONTH((uint16_t&)dir.modifyDate) - 1;
+	tmStr.tm_mday = FS_DAY((uint16_t&)dir.modifyDate);
 	time_t t2t = mktime(&tmStr);
 	tm *gTm = gmtime(&t2t);
 
@@ -416,14 +421,18 @@ void ESPWebDAV::handlePut(ResourceType resource)	{
 		size_t contBlocks = (contentLen/WRITE_BLOCK_CONST + 1);
 		uint32_t bgnBlock, endBlock;
 
-		if (!nFile.createContiguous(sd.vwd(), uri.c_str(), contBlocks * WRITE_BLOCK_CONST))
+    FatFile dir;
+    dir.open(sd.vol(), ".", O_RDONLY);
+
+		if (!nFile.createContiguous(&dir, uri.c_str(), contBlocks * WRITE_BLOCK_CONST))
 			return handleWriteError("File create contiguous sections failed", &nFile);
 
 		// get the location of the file's blocks
 		if (!nFile.contiguousRange(&bgnBlock, &endBlock))
 			return handleWriteError("Unable to get contiguous range", &nFile);
 
-		if (!sd.card()->writeStart(bgnBlock, contBlocks))
+		// if (!sd.card()->writeStart(bgnBlock, contBlocks))
+    if (!sd.card()->writeStart(bgnBlock))
 			return handleWriteError("Unable to start writing contiguous range", &nFile);
 
 		// read data from stream and write to the file
@@ -452,6 +461,8 @@ void ESPWebDAV::handlePut(ResourceType resource)	{
 		// truncate the file to right length
 		if(!nFile.truncate(contentLen))
 			return handleWriteError("Unable to truncate the file", &nFile);
+
+    dir.close();
 
 		DBG_PRINT("File "); DBG_PRINT(contentLen - numRemaining); DBG_PRINT(" bytes stored in: "); DBG_PRINT((millis() - tStart)/1000); DBG_PRINTLN(" sec");
 	}

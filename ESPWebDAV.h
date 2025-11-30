@@ -22,7 +22,8 @@ enum DepthType { DEPTH_NONE, DEPTH_CHILD, DEPTH_ALL };
 
 class ESPWebDAV	{
 public:
-	bool init(int chipSelectPin, SPISettings spiSettings, int serverPort);
+	//bool init(int chipSelectPin, SPISettings spiSettings, int serverPort);
+  bool init(int chipSelectPin, int serverPort);
   bool initSD(int chipSelectPin, SPISettings spiSettings);
   bool startServer();
 	bool isClientWaiting();
